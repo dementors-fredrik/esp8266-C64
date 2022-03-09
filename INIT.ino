@@ -2,6 +2,7 @@
 void initWifi(){
   APsetup();
 }
+
 void initWifi_client(){ // not used with captive
   // Start Wifi
   WiFi.begin(ssid, password);
@@ -26,7 +27,9 @@ void initServer(){
                     //server.setContentLength(CONTENT_LENGTH_UNKNOWN);
                     server.send_P ( 200, "text/plain", vicii); 
                    });             
-  server.on ( "/VICIIRefresh", VICIIRefresh);
+  server.on ( "/VICIIRefresh", []() {
+    VICIIRefresh();
+    });//VICIIRefresh);
 
 //  server.onNotFound(handleNotFound);
   
@@ -45,9 +48,10 @@ void checkFreeSpace(){
 int fase=0;
 void init_fase(){
     if (fase!=4) {Serial.print ("Start boot fase ");Serial.println(fase);}
-  if (fase==0) {initWifi();}
-  if (fase==1) {initServer();}
+ // if (fase==0) {initWifi();}
+  if (fase==1) {initWifi_client();}
   //if (fase==2) {checkFreeSpace();}
+  if(fase==2) {initServer();}
   if (fase==3) {reset6502();}
   if (fase!=4) {Serial.print ("..finished boot fase ");Serial.println(fase);}
   if (fase!=4) {fase++;return;}

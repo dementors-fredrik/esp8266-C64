@@ -3,7 +3,7 @@
 
 const byte DNS_PORT = 53;
 IPAddress apIP(10, 1, 1, 1);
-DNSServer dnsServer;
+//DNSServer dnsServer;
 
 void APsetup() {
   WiFi.mode(WIFI_AP);
@@ -12,7 +12,7 @@ void APsetup() {
 
   // if DNSServer is started with "*" for domain name, it will reply with
   // provided IP to all DNS request
-  dnsServer.start(DNS_PORT, "*", apIP);
+  //dnsServer.start(DNS_PORT, "*", apIP);
 
 // replay to all requests with same HTML
   server.onNotFound([]() {
@@ -23,7 +23,7 @@ void APsetup() {
 }
 
 void APloop() {
-  dnsServer.processNextRequest();
+ // dnsServer.processNextRequest();
 }
 
 void SerialNotFound() {

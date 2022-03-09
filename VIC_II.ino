@@ -1,62 +1,10 @@
-//server.send_uint8(200, "text/plain", msg);   
 void send_uint8(const uint8_t *data, const size_t data_length) {
-  String data_type = "application/octet-stream";
-  WiFiClient client = server.client();
-  client.write(data, data_length);
-  client.flush();
-  client.stop();
-
-/*
- else if(path.endsWith(".htm")) dataType = "text/html";
-  else if(path.endsWith(".css")) dataType = "text/css";
-  else if(path.endsWith(".js")) dataType = "application/javascript";
-  else if(path.endsWith(".png")) dataType = "image/png";
-  else if(path.endsWith(".gif")) dataType = "image/gif";
-  else if(path.endsWith(".jpg")) dataType = "image/jpeg";
-  else if(path.endsWith(".ico")) dataType = "image/x-icon";
-  else if(path.endsWith(".xml")) dataType = "text/xml";
-  else if(path.endsWith(".pdf")) dataType = "application/pdf";
-  else if(path.endsWith(".zip")) dataType = "application/zip";
-  //if(server.hasArg("download")) dataType = "application/octet-stream";
-
-
-Content length is BIG problem in Chrome browsers
-   *  - when specified, it make double definition in header, so Chrome is going to madness
-   *  - when set to unknown, then it fall to chunks encodings without chinks..... bad
-   *  - when unspecified it did not boot at all
-   *  
-   *  Compatibility is with Interfernet Exploder Browser from MickeySuck (texted on in Winblows 10 only)
-   *  ==================================================================================================
-   *  
-   *  https://duckduckgo.com/?q=esp8266+err_response_headers_multiple_content_length
-   *  https://gist.github.com/spacehuhn/6c89594ad0edbdb0aad60541b72b2388
-   *  https://github.com/esp8266/Arduino/issues/3205
-   *  https://github.com/esp8266/Arduino/issues/2121
-   *  https://www.esp8266.com/viewtopic.php?p=48732
-   *  https://stackoverflow.com/questions/37711762/issue-loading-files-w-spiffs-err-content-length-mismatch
-   *  
-
-Here are original Chrome incompatible code:
-  String data_type = "application/octet-stream";
-  server.sendHeader("Content-Length", String(data_length)); // Chrome says: ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_LENGTH
-  //server.setContentLength(CONTENT_LENGTH_UNKNOWN);          // Chrome says: ERR_INVALID_CHUNKED_ENCODING
-                                                              // commented both - all does blank screen
-  server.send(200, data_type.c_str(), "");
-  WiFiClient client = server.client();
-  client.write(data, data_length);                            
-
-Chrome RUN !!! But speed is generally about 0.5fps - browser wait for another data due unspecified size
-  String data_type = "application/octet-stream";
-  WiFiClient client = server.client();
-  client.write(data, data_length);
-*/
-
+  server.send_P(200,"application/octet-stream",(const char*)data, data_length);
 }
 
 
 
 void dumpScreenRam(){
-  //Serial.println ("Cycles:"+cycles);
   for (int i=0; i<1000; i++){
     uint8_t petscii = RAM[i + 1024];
     if (petscii<32) petscii = petscii + 64;
@@ -66,12 +14,15 @@ void dumpScreenRam(){
   }
 }
 
+extern void nmi6502();
+
 void VICIIRefresh(){
   wdt_disable();
 
 //server.setContentLength(CONTENT_LENGTH_UNKNOWN);
 //handle keypresses
   if (server.args()){
+    bool restore_pressed = false;
      //Serial.println("keyDown: ");
      //code using http://commodore64.se/wiki/index.php/Commodore_64_RAM_Addresses    
      int nrkeys=0;  
@@ -81,7 +32,17 @@ void VICIIRefresh(){
          //if (key>63 && key<94) key = key - 64;
          //make all upper case
          if (key>96 && key<123) key = key - 32;
+         char buff[0xff];
+         sprintf(buff,"Key %d", key);
+         Serial.println(buff);
          key = key & 0x7F;
+         if(key == 8) {
+          key = 20; // backspace -> c64 backspace 
+         }
+         if(key == 27) {
+          key = 3; // esc -> run/stop
+          restore_pressed = true;
+         }
          RAM[631+nrkeys] = key ;//& 0x7F;//put key in buffer
          nrkeys++;         
 /*         
@@ -98,6 +59,12 @@ void VICIIRefresh(){
        }
      }      
      RAM[198]=nrkeys;//number keys put in buffer
+     if(restore_pressed) {
+       Serial.println("NMI");
+       nmi6502();
+     }
+      
+
   }
 
 //245-246 vector keyboard decode table

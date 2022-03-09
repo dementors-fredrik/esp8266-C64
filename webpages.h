@@ -41,7 +41,7 @@ const char vicii[] PROGMEM =
     "document.addEventListener('DOMContentLoaded',initCanvas,false);\n"
     "var fC=0;\n"
     "var cS=0;\n"
-    "setInterval(updateFPS,1000);\n"
+    "setInterval(updateFPS,60);\n"
     "setInterval(function(){cS=!cS;},500);\n"
     "function updateFPS(){\n"
     "  var fT = document.getElementById('fps');\n"

@@ -23,47 +23,70 @@
   
   This sketch will create free WiFi-AP named Commodore 64 - tap on it and enjoy
 */
-//find free space 
-//extern "C" {#include "user_interface.h"}
 
+
+#include "esp8266-c64.h"
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include "webpages.h"
 
 //const char* ssid = "DeltaFlyer";
-const char* ssid = "Voyager";
-const char* password = "keelta01";
+const char* ssid = "Sonixwave";
+const char* password = "";
 
 ESP8266WebServer server(80);
-uint8_t curkey = 0;
 
-#define EXECUTES_PER_RUN 100
-#define RAM_SIZE 24576 
-uint8_t RAM[RAM_SIZE];
-uint8_t HIGHVIC[16];//color of background/border/sprites are situated here
+uint8_t *RAM;//[RAM_SIZE];
+uint8_t *HIGHVIC;//[16];//color of background/border/sprites are situated here
 
-uint16_t getpc();
-uint8_t getop();
-void exec6502(int32_t tickcount);
-void reset6502();
+void setupMemory() {
+  RAM = (uint8_t*)malloc(RAM_SIZE);
+  HIGHVIC = (uint8_t*)malloc(16);
+}
+
 void serout(uint8_t val) {
 		Serial.write(val);
 }
-
 
 void setup () {
   delay(1000);
   Serial.begin (115200);
   Serial.println("Setup Start");
+  setupMemory();
 }
 
-unsigned long cycles=0;
+extern void irq6502();
+
+extern CIATimer CIA_A_Timer;
+extern CIATimer CIA_B_Timer;
+extern unsigned char CIA_A_CRA;
+
+#define STEPS 10
+extern void write6502(uint16_t addr, uint8_t value);
+extern uint8_t read6502(uint16_t addr);
+
 void loop () {
   init_fase();  
   server.handleClient();
-  APloop();
-  
-  exec6502(EXECUTES_PER_RUN);    
-  cycles++;
+  //APloop();
+  exec6502(EXECUTES_PER_RUN);  
+   
+ if(read6502(0xDC0E)&0x1) {
+    CIA_A_Timer.b16-=STEPS;
+      {
+        char buff[0xff];
+        sprintf(buff,"%x %x%x",CIA_A_Timer.b16, CIA_A_Timer.b[0], CIA_A_Timer.b[1]);
+        Serial.println(buff);
+      }
+
+    if((long)(CIA_A_Timer.b16-STEPS)<=0) {
+       Serial.println("CIA A Expired");
+       write6502(0xDC0D,1);
+       write6502(0xDC0E,0);
+       irq6502();
+    }
+ }
+  //
+
 }
